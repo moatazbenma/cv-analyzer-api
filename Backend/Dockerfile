@@ -3,10 +3,10 @@ FROM php:8.2-fpm
 
 WORKDIR /var/www/html
 
-# Install system dependencies with build essentials
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
     nginx \
+    supervisor \
     git \
     curl \
     libpq-dev \
@@ -54,6 +54,29 @@ server {
 }
 EOF
 
+# Configure Supervisor
+RUN mkdir -p /var/log/supervisor
+COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
+[supervisord]
+nodaemon=true
+logfile=/var/log/supervisor/supervisord.log
+pidfile=/var/run/supervisord.pid
+
+[program:php-fpm]
+command=/usr/local/sbin/php-fpm
+stdout_logfile=/var/log/supervisor/php-fpm.log
+stderr_logfile=/var/log/supervisor/php-fpm.log
+autorestart=true
+priority=999
+
+[program:nginx]
+command=/usr/sbin/nginx -g "daemon off;"
+stdout_logfile=/var/log/supervisor/nginx.log
+stderr_logfile=/var/log/supervisor/nginx.log
+autorestart=true
+priority=999
+EOF
+
 # Expose port
 EXPOSE 8080
 
@@ -61,5 +84,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8080/ || exit 1
 
-# Start PHP-FPM in background, then Nginx in foreground (blocking)
-CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
+# Start Supervisor to manage both processes
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
