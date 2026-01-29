@@ -28,6 +28,17 @@ RUN mkdir -p /var/www/html/storage/logs \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
 
+# Configure PHP-FPM to listen on TCP
+RUN echo "[www]" > /usr/local/etc/php-fpm.d/zz-www.conf \
+    && echo "listen = 127.0.0.1:9000" >> /usr/local/etc/php-fpm.d/zz-www.conf \
+    && echo "user = www-data" >> /usr/local/etc/php-fpm.d/zz-www.conf \
+    && echo "group = www-data" >> /usr/local/etc/php-fpm.d/zz-www.conf \
+    && echo "pm = dynamic" >> /usr/local/etc/php-fpm.d/zz-www.conf \
+    && echo "pm.max_children = 10" >> /usr/local/etc/php-fpm.d/zz-www.conf \
+    && echo "pm.start_servers = 2" >> /usr/local/etc/php-fpm.d/zz-www.conf \
+    && echo "pm.min_spare_servers = 1" >> /usr/local/etc/php-fpm.d/zz-www.conf \
+    && echo "pm.max_spare_servers = 3" >> /usr/local/etc/php-fpm.d/zz-www.conf
+
 # Configure Nginx
 COPY <<EOF /etc/nginx/sites-available/default
 server {
@@ -61,9 +72,10 @@ COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
 nodaemon=true
 logfile=/var/log/supervisor/supervisord.log
 pidfile=/var/run/supervisord.pid
+user=root
 
 [program:php-fpm]
-command=/usr/local/sbin/php-fpm
+command=/usr/local/sbin/php-fpm --nodaemonize
 stdout_logfile=/var/log/supervisor/php-fpm.log
 stderr_logfile=/var/log/supervisor/php-fpm.log
 autorestart=true
