@@ -1,0 +1,60 @@
+services:
+  - type: web
+    name: cv-analyzer-api
+    env: docker
+    repo: https://github.com/your-username/cv-analyzer-api.git
+    branch: main
+    dockerfilePath: ./Backend/Dockerfile
+    buildCommand: ./Backend/build.sh
+    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    healthCheckPath: /
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: LOG_CHANNEL
+        value: stack
+      - key: DB_CONNECTION
+        value: postgresql
+      - key: DB_HOST
+        fromDatabase:
+          name: cv-analyzer-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: cv-analyzer-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: cv-analyzer-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: cv-analyzer-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: cv-analyzer-db
+          property: password
+      - key: BYTEZ_API_KEY
+        sync: false
+      - key: BYTEZ_API_URL
+        value: https://api.bytez.com/api/v1/completions
+      - key: BYTEZ_MODEL
+        value: meta-llama/Llama-3.2-3B-Instruct
+      - key: FRONTEND_URL
+        value: https://cv-analyzer.vercel.app
+      - key: ALLOWED_ORIGINS
+        value: https://cv-analyzer.vercel.app
+    disk:
+      name: cv-analyzer-storage
+      mountPath: /var/www/html/storage
+      sizeGB: 10
+
+databases:
+  - name: cv-analyzer-db
+    engine: postgres
+    version: 15
+    plan: standard
+    ipAllowList: []
