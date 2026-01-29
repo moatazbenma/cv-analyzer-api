@@ -61,5 +61,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8080/ || exit 1
 
-# Start PHP-FPM and Nginx (skip migrations to avoid timeout)
-CMD ["sh", "-c", "php-fpm & nginx -g 'daemon off;'"]
+# Start PHP-FPM in background, then Nginx in foreground (blocking)
+CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
